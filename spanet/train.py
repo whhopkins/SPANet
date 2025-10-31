@@ -8,9 +8,10 @@ import torch
 import pytorch_lightning as pl
 from pytorch_lightning.profilers import PyTorchProfiler
 from pytorch_lightning.loggers import TensorBoardLogger
-from pytorch_lightning.callbacks.progress.rich_progress import _RICH_AVAILABLE
+#from pytorch_lightning.callbacks.progress.rich_progress import _RICH_AVAILABLE
+_RICH_AVAILABLE = False
 from pytorch_lightning.loggers.wandb import _WANDB_AVAILABLE, WandbLogger
-
+#print("Rich progress bar available: ", _RICH_AVAILABLE)
 from pytorch_lightning.callbacks import (
     LearningRateMonitor,
     ModelCheckpoint,
@@ -142,10 +143,10 @@ def main(
     callbacks = [
         ModelCheckpoint(
             verbose=options.verbose_output,
-            filename='{epoch}-{step}-{validation_average_jet_accuracy:.3f}',
-            monitor='validation_average_jet_accuracy',
+            filename='{epoch}-{step}',
+            monitor='loss/total_loss',
             save_top_k=3,
-            mode='max',
+            mode='min',
             save_last=True
         ),
         LearningRateMonitor(),
