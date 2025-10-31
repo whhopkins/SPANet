@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 
 from spanet.options import Options
 from spanet.dataset.jet_reconstruction_dataset import JetReconstructionDataset
+from spanet.dataset.file_utils import expand_and_combine_hdf5
 from spanet.network.learning_rate_schedules import get_linear_schedule_with_warmup
 from spanet.network.learning_rate_schedules import get_cosine_with_hard_restarts_schedule_with_warmup
 
@@ -84,6 +85,16 @@ class JetReconstructionBase(pl.LightningModule):
         training_range = self.options.dataset_limit
         validation_range = 1.0
 
+        # Resolve file paths/patterns - supports wildcards for combining multiple files
+        verbose = getattr(self.options, 'verbose_output', False)
+        
+        if training_file:
+            if verbose:
+                print(f"Resolving training file pattern: {training_file}")
+            training_file = expand_and_combine_hdf5(training_file, verbose=verbose)
+            if verbose:
+                print(f"Using training file: {training_file}")
+
         # If we dont have a validation file provided, create one from the training file.
         if not validation_file:
             validation_file = training_file
@@ -92,6 +103,13 @@ class JetReconstructionBase(pl.LightningModule):
             train_validation_split = self.options.dataset_limit * self.options.train_validation_split
             training_range = (0.0, train_validation_split)
             validation_range = (train_validation_split, self.options.dataset_limit)
+        else:
+            # Resolve validation file path/pattern - supports wildcards
+            if verbose:
+                print(f"Resolving validation file pattern: {validation_file}")
+            validation_file = expand_and_combine_hdf5(validation_file, verbose=verbose)
+            if verbose:
+                print(f"Using validation file: {validation_file}")
 
         # Construct primary training datasets
         # Note that only the training dataset should be limited to full events or partial events.
@@ -116,8 +134,13 @@ class JetReconstructionBase(pl.LightningModule):
         # This is not used in the main training script but is still useful for testing later.
         testing_dataset = None
         if self.options.testing_file:
+            if verbose:
+                print(f"Resolving testing file pattern: {self.options.testing_file}")
+            testing_file = expand_and_combine_hdf5(self.options.testing_file, verbose=verbose)
+            if verbose:
+                print(f"Using testing file: {testing_file}")
             testing_dataset = self.dataset(
-                data_file=self.options.testing_file,
+                data_file=testing_file,
                 event_info=self.options.event_info_file,
                 limit_index=1.0,
                 vector_limit=self.options.limit_to_num_jets
