@@ -6,6 +6,7 @@ import h5py
 
 from spanet.dataset.jet_reconstruction_dataset import JetReconstructionDataset
 from spanet.dataset.types import Evaluation, SpecialKey, Outputs
+from spanet.dataset.file_utils import expand_and_combine_hdf5
 from spanet.evaluation import evaluate_on_test_dataset, load_model
 
 
@@ -73,6 +74,12 @@ def main(log_directory: str,
          output_vectors: bool,
          gpu: bool,
          fp16: bool):
+    # Expand wildcards and combine multiple files if needed
+    if test_file is not None:
+        print(f"Processing test file pattern: {test_file}")
+        test_file = expand_and_combine_hdf5(test_file, verbose=True)
+        print(f"Using test file: {test_file}")
+    
     model = load_model(log_directory, test_file, event_file, batch_size, gpu, fp16=fp16, checkpoint=checkpoint)
 
     if output_vectors:
@@ -97,7 +104,8 @@ if __name__ == '__main__':
 
     parser.add_argument("-tf", "--test_file", type=str, default=None,
                         help="Replace the test file in the options with a custom one. "
-                             "Must provide if options does not define a test file.")
+                             "Must provide if options does not define a test file. "
+                             "Supports wildcards (e.g., 'data/*.h5') to combine multiple files.")
 
     parser.add_argument("-ef", "--event_file", type=str, default=None,
                         help="Replace the event file in the options with a custom event.")
